@@ -1,0 +1,33 @@
+# dbt
+target/
+dbt_packages/
+logs/
+.user.yml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# uv / venv
+.venv/
+venv/
+
+# Environment / secrets
+.env
+*.env.local
+
+# Data files (per your earlier decision)
+data/*
+!data/.gitkeep
+
+# OS / editor junk
+.DS_Store
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+artifact/

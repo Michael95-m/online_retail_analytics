@@ -1,0 +1,108 @@
+version: 2
+
+models:
+  - name: mart_revenue_daily
+    description: "Daily revenue mart"
+    columns:
+      - name: invoice_dt
+        description: "The date of the invoice"
+        data_tests:
+          - not_null
+          - unique
+      - name: gross_revenue
+        description: "Total revenue for the day (excluding cancellations)"
+      - name: cancelled_revenue
+        description: "Total revenue lost due to cancellations for the day"
+      - name: net_revenue
+        description: "Total revenue for the day (including cancellations). gross minus cancelled"
+      - name: merchandise_revenue
+        description: "Total revenue from merchandise for the day"
+      - name: non_merchandise_revenue
+        description: "Total revenue from non-merchandise for the day"
+      - name: total_invoice_count
+        description: "Total number of invoices for the day"
+      - name: cancelled_invoice_count
+        description: "Total number of cancelled invoices for the day"
+      - name: adjustment_quantity
+        description: "Total number of adjustments for the day"
+
+  - name: mart_revenue_monthly
+    description: "Monthly revenue mart"
+    columns:
+      - name: invoice_mth
+        description: "The start date of the month of the invoice"
+        data_tests:
+          - not_null
+          - unique
+      - name: gross_revenue
+        description: "Total revenue for the month (excluding cancellations)"
+      - name: cancelled_revenue
+        description: "Total revenue lost due to cancellations for the month"
+      - name: net_revenue
+        description: "Total revenue for the month (including cancellations). gross minus cancelled"
+      - name: merchandise_revenue
+        description: "Total revenue from merchandise for the month"
+      - name: non_merchandise_revenue
+        description: "Total revenue from non-merchandise for the month"
+      - name: total_invoice_count
+        description: "Total number of invoices for the month"
+      - name: cancelled_invoice_count
+        description: "Total number of cancelled invoices for the month"
+      - name: adjustment_quantity
+        description: "Total number of adjustments for the month"
+
+  - name: mart_revenue_by_country
+    description: "Revenue mart by country"
+    columns:
+      - name: country
+        description: "The origin country of the invoice"
+        data_tests:
+          - not_null
+          - unique
+      - name: gross_revenue
+        description: "Total revenue for the country (excluding cancellations)"
+      - name: cancelled_revenue
+        description: "Total revenue lost due to cancellations for the country"
+      - name: net_revenue
+        description: "Total revenue for the country (including cancellations). gross minus cancelled"
+      - name: merchandise_revenue
+        description: "Total revenue from merchandise for the country"
+      - name: non_merchandise_revenue
+        description: "Total revenue from non-merchandise for the country"
+      - name: total_invoice_count
+        description: "Total number of invoices for the country"
+      - name: cancelled_invoice_count
+        description: "Total number of cancelled invoices for the country"
+      - name: adjustment_quantity
+        description: "Total number of adjustments for the country"
+
+  - name: mart_daily_transaction_detail
+    description: "Daily transaction detail mart"
+    columns:
+      - name: stock_code
+        description: "The stock code of the product"
+        data_tests:
+          - not_null
+      - name: country
+        description: "The origin country of the invoice"
+        data_tests:
+          - not_null
+      - name: report_dt
+        description: "The date of the invoice"
+        data_tests:
+          - not_null
+      - name: is_cancelled
+        description: "Indicates whether the invoice is cancelled."
+        data_tests:
+          - not_null
+      - name: is_merchandise
+        description: "Indicates whether the stock code is merchandise or not."
+        data_tests:
+          - not_null
+      - name: total_quantity
+        description: "Total quantity of products in this invoice"
+      - name: adjustment_quantity
+        description: "Total quantity of adjustments in this invoice"
+      - name: line_revenue
+        description: "Total revenue from this line item in the invoice"
+    

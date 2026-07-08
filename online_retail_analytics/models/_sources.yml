@@ -1,0 +1,41 @@
+version: 2
+
+sources:
+  - name: retail
+    description: "Raw data loaded from Online Retail II from the UCI Machine Learning Repository into ClickHouse"
+    
+    # In ClickHouse, the schema corresponds directly to your Database name
+    schema: retail 
+
+    tables:
+      - name: raw_invoice
+        description: "Raw invoice data from Online Retail II dataset"
+        columns:
+          - name: invoice_id
+            description: "Invoice number. Prefix 'C' indicates cancellation"
+            data_tests:
+              - not_null
+          - name: stock_code
+            description: "Product (item) code. Nominal, uniquely assigned to each distinct product."
+            data_tests:
+              - not_null
+          - name: description
+            description: "Product (item) name. Nominal."
+          - name: quantity
+            description: "The quantities of each product (item) per transaction. Numeric."
+            data_tests:
+              - not_null
+          - name: invoice_date
+            description: "Invoice  timestamp. Numeric, the day and time when each transaction was generated."
+            data_tests:
+              - not_null
+          - name: unit_price
+            description: "Unit price. Numeric, Product price per unit in sterling."
+            data_tests:
+              - not_null
+          - name: customer_id
+            description: "Customer number. Nominal, a 5-digit integral number uniquely assigned to each customer."
+          - name: country
+            description: "Country name. Nominal, the name of the country where each customer resides."
+            data_tests:
+              - not_null
