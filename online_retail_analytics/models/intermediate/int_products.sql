@@ -1,39 +1,45 @@
-WITH stg_invoice AS 
-  (
-SELECT *
-FROM {{ ref('stg_invoices') }}
-  ),
-  valid_stock_code AS 
-  (
-SELECT  
-  stock_code, description, invoice_ts
-FROM stg_invoice
-WHERE is_merchandise = 1
-  ),
-  latest_update AS 
-  (
-SELECT
- stock_code,
- description,
- invoice_ts,
- row_number() OVER (PARTITION BY stock_code
-ORDER BY (description IS NOT NULL) DESC, invoice_ts DESC) AS rn -- prefer a non-null description, but keep the row even if every description was null
-FROM valid_stock_code
-  ),
-  stock_timestamp AS 
-  (
-  SELECT  
-    stock_code, min(invoice_ts) AS first_invoice_ts, max(invoice_ts) AS final_invoice_ts
-  FROM valid_stock_code 
-  group by stock_code 
-  )
-SELECT  
- latest_update.stock_code,
-  latest_update.description,
-  ts_data.first_invoice_ts,
-  ts_data.final_invoice_ts
-FROM latest_update
-LEFT JOIN 
-  stock_timestamp ts_data
-ON latest_update.stock_code = ts_data.stock_code
-WHERE latest_update.rn = 1
+with stg_invoice as (
+    select *
+    from {{ ref('stg_invoices') }}
+),
+
+valid_stock_code as (
+    select
+        stock_code,
+        description,
+        invoice_ts
+    from stg_invoice
+    where is_merchandise = 1
+),
+
+latest_update as (
+    select
+        stock_code,
+        description,
+        invoice_ts,
+        row_number() over (
+            partition by stock_code
+            order by (description is not NULL) desc, invoice_ts desc
+        ) as rn -- prefer a non-null description, but keep the row even if every description was null
+    from valid_stock_code
+),
+
+stock_timestamp as (
+    select
+        stock_code,
+        min(invoice_ts) as first_invoice_ts,
+        max(invoice_ts) as final_invoice_ts
+    from valid_stock_code
+    group by stock_code
+)
+
+select
+    latest_update.stock_code,
+    latest_update.description,
+    ts_data.first_invoice_ts,
+    ts_data.final_invoice_ts
+from latest_update
+left join
+    stock_timestamp as ts_data
+    on latest_update.stock_code = ts_data.stock_code
+where latest_update.rn = 1

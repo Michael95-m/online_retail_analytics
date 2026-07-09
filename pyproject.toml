@@ -11,4 +11,5 @@ dependencies = [
     "pandas>=3.0.3",
     "python-dotenv>=1.2.2",
     "sqlfluff>=4.2.2",
+    "sqlfluff-templater-dbt>=4.2.2",
 ]
