@@ -105,7 +105,7 @@ Expected result: **1,067,371 rows** in `retail.raw_invoice`.
 
 ### 6. Configure dbt
 
-dbt connection settings live in `~/.dbt/profiles.yml` (outside the repo, never committed):
+dbt connection settings live in `online_retail_analytics/profiles/profiles.yml` 
 
 ```yaml
 online_retail_analytics:
@@ -113,15 +113,24 @@ online_retail_analytics:
   outputs:
     dev:
       type: clickhouse
-      threads: 4
-      schema: retail
-      host: localhost
-      port: 8123
-      user: admin
-      pass: admin
+      driver:
+      host: "{{ env_var('CLICKHOUSE_HOST') }}"
+      port: "{{ env_var('CLICKHOUSE_PORT') | as_number }}"
+      user: "{{ env_var('CLICKHOUSE_USER') }}"
+      password: "{{ env_var('CLICKHOUSE_PASSWORD') }}"
+      schema: "{{ env_var('CLICKHOUSE_SCHEMA', 'retail') }}"
+      secure: False
 ```
 
-Verify the connection:
+Run this at the <b>root directory</b>.
+
+```bash
+source env.sh
+```
+
+Be careful. it's not ./env.sh
+
+After that, verify the connection:
 
 ```bash
 cd online_retail_analytics
