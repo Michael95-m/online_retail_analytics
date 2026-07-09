@@ -1,0 +1,46 @@
+version: 2 
+
+models:
+  - name: stg_orders
+    description: "This model is used to stage the orders data from the raw orders table."
+    columns:
+      - name: invoice_id
+        description: "Invoice number. Prefix 'C' indicates cancellation"
+        data_tests:
+          - not_null
+      - name: stock_code
+        description: "Product (item) code. Nominal, uniquely assigned to each distinct product."
+        data_tests:
+          - not_null
+      - name: description
+        description: "A brief description of the product in the order."
+      - name: quantity
+        description: "he quantities of each product (item) per transaction. Numeric."
+        data_tests:
+          - not_null
+      - name: invoice_ts
+        description: "TInvoice  timestamp. Numeric, the day and time when each transaction was generated."
+        data_tests:
+          - not_null
+      - name: unit_price
+        description: "Unit price. Numeric, Product price per unit in sterling."
+        data_tests:
+          - not_null
+      - name: customer_id
+        description: "Customer number. Nominal, a 5-digit integral number uniquely assigned to each customer."
+      - name: country
+        description: "Country name. Nominal, the name of the country where each customer resides."
+        data_tests:
+          - not_null
+      - name: is_cancelled
+        description: "Indicator showing whether the order was cancelled (1) or not (0)."
+        data_tests:
+          - not_null
+      - name: is_zero_priced
+        description: "Indicator showing whether the order has a unit price of zero (1) or not (0)."
+        data_tests:
+          - not_null
+      - name: is_merchandise
+        description: "Indicator showing whether the order is for merchandise (1) or not (0)."
+        data_tests:
+          - not_null
