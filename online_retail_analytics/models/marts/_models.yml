@@ -105,4 +105,3 @@ models:
         description: "Total quantity of adjustments in this invoice"
       - name: line_revenue
         description: "Total revenue from this line item in the invoice"
-    
