@@ -1,0 +1,60 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      clickhouse:
+        image: clickhouse/clickhouse-server:latest
+        ports:
+          - 8123:8123
+        env:
+          CLICKHOUSE_DB: retail
+          CLICKHOUSE_USER: ci                 # ← add
+          CLICKHOUSE_PASSWORD: ci             # ← add
+          CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1   # ← add (grants full access)
+
+    env:
+      DBT_PROFILES_DIR: ${{ github.workspace }}/online_retail_analytics/profiles
+      CLICKHOUSE_HOST: localhost
+      CLICKHOUSE_PORT: "8123"
+      CLICKHOUSE_USER: ci                     # ← was default
+      CLICKHOUSE_PASSWORD: ci                 # ← was empty
+      CLICKHOUSE_SCHEMA: retail
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for ClickHouse
+        run: |
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:8123/ping | grep -q Ok; then echo "up"; exit 0; fi
+            echo "waiting..."; sleep 2
+          done
+          echo "ClickHouse never became ready"; exit 1
+
+      - name: Create table + load fixture
+        run: |
+          curl -sS --fail-with-body "http://localhost:8123/?user=ci&password=ci" \
+            --data-binary @ingestion/ddl/raw_invoice.sql
+          curl -sS --fail-with-body \
+            "http://localhost:8123/?user=ci&password=ci&query=INSERT%20INTO%20retail.raw_invoice%20FORMAT%20CSVWithNames" \
+            --data-binary @ci/fixtures/raw_invoice.csv
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: dbt build (models + tests)
+        working-directory: online_retail_analytics
+        run: |
+          uv run dbt deps
+          uv run dbt build
