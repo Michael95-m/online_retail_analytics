@@ -9,20 +9,23 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    services:                                   # ← NEW: a throwaway ClickHouse for this job
+    services:
       clickhouse:
         image: clickhouse/clickhouse-server:latest
         ports:
           - 8123:8123
         env:
-          CLICKHOUSE_DB: retail                 # auto-creates the `retail` database
+          CLICKHOUSE_DB: retail
+          CLICKHOUSE_USER: ci                 # ← add
+          CLICKHOUSE_PASSWORD: ci             # ← add
+          CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1   # ← add (grants full access)
 
     env:
       DBT_PROFILES_DIR: ${{ github.workspace }}/online_retail_analytics/profiles
       CLICKHOUSE_HOST: localhost
       CLICKHOUSE_PORT: "8123"
-      CLICKHOUSE_USER: default                  # built-in user, full access, no password
-      CLICKHOUSE_PASSWORD: ""
+      CLICKHOUSE_USER: ci                     # ← was default
+      CLICKHOUSE_PASSWORD: ci                 # ← was empty
       CLICKHOUSE_SCHEMA: retail
 
     steps:
@@ -38,10 +41,10 @@ jobs:
 
       - name: Create table + load fixture
         run: |
-          curl -sS --fail-with-body http://localhost:8123/ \
+          curl -sS --fail-with-body "http://localhost:8123/?user=ci&password=ci" \
             --data-binary @ingestion/ddl/raw_invoice.sql
           curl -sS --fail-with-body \
-            "http://localhost:8123/?query=INSERT%20INTO%20retail.raw_invoice%20FORMAT%20CSVWithNames" \
+            "http://localhost:8123/?user=ci&password=ci&query=INSERT%20INTO%20retail.raw_invoice%20FORMAT%20CSVWithNames" \
             --data-binary @ci/fixtures/raw_invoice.csv
 
       - name: Install uv
@@ -54,4 +57,4 @@ jobs:
         working-directory: online_retail_analytics
         run: |
           uv run dbt deps
-          uv run dbt build          # builds every model AND runs every test
+          uv run dbt build
