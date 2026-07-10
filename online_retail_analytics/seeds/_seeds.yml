@@ -1,0 +1,17 @@
+version: 2
+
+seeds:
+  - name: stock_code_type
+    description: "Maps non-merchandise stock codes to a product type. Any code NOT here is treated as merchandise."
+    columns:
+      - name: stock_code
+        description: "Special (non-merchandise) stock code, uppercased to match staging."
+        data_tests:
+          - not_null
+          - unique
+      - name: product_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['postage', 'fee', 'adjustment', 'charity', 'voucher', 'test', 'other']
