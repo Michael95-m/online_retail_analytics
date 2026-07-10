@@ -105,7 +105,7 @@ Expected result: **1,067,371 rows** in `retail.raw_invoice`.
 
 ### 6. Configure dbt
 
-dbt connection settings live in `online_retail_analytics/profiles/profiles.yml` 
+dbt connection settings live in `online_retail_analytics/profiles/profiles.yml`
 
 ```yaml
 online_retail_analytics:

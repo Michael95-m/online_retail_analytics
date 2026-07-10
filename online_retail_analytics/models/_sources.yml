@@ -3,9 +3,9 @@ version: 2
 sources:
   - name: retail
     description: "Raw data loaded from Online Retail II from the UCI Machine Learning Repository into ClickHouse"
-    
+
     # In ClickHouse, the schema corresponds directly to your Database name
-    schema: retail 
+    schema: retail
 
     tables:
       - name: raw_invoice
