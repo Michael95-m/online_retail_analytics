@@ -72,3 +72,85 @@ models:
         description: "The timestamp of the last invoice for this customer"
       - name: first_invoice_date
         description: "The date of the first invoice for this customer"
+
+  - name: fct_invoice_lines
+    description: "Invoice lines fact table"
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - invoice_id
+              - line_number
+    columns:
+      - name: invoice_id
+        description: "The unique identifier of the invoice"
+        data_tests:
+          - not_null
+      - name: stock_code
+        description: "The stock code of the product"
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: stock_code
+      - name: country
+        description: "The country of the customer"
+      - name: invoice_date
+        description: "The date of the invoice"
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: transaction_type
+        description: "The transaction type of the invoice line"
+      - name: is_merchandise
+        description: "The type of the product, whether merchandise or not"
+      - name: quantity
+        description: "The quantity of the product in the invoice line"
+      - name: unit_price
+        description: "The unit price of the product in the invoice line"
+      - name: line_amount
+        description: "The amount of the invoice line"
+      - name: customer_id
+        description: "The unique identifier of the customer"
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id
+      - name: line_number
+        description: "The line number of the invoice"
+        data_tests:
+          - not_null
+      - name: invoice_ts
+        description: "The timestamp of the invoice"
+
+  - name: fct_invoices
+    description: "Invoice fact table"
+    columns:
+      - name: invoice_id
+        description: "The unique identifier of the invoice"
+        data_tests:
+          - not_null
+          - unique
+      - name: customer_id
+        description: "The unique identifier of the customer"
+      - name: country
+        description: "The country of the customer"
+      - name: invoice_date
+        description: "The date of the invoice"
+      - name: is_cancelled
+        description: "The invoice is cancelled or not"
+      - name: line_count
+        description: "The line count included in the invoice"
+      - name: distinct_product_count
+        description: "count of distinct stock code in the invoice"
+      - name: total_quantity
+        description: "quantity of products in the invoice"
+      - name: merchandise_revenue
+        description: "merchandise revenue of the invoice"
+      - name: non_merchandise_revenue
+        description: "non-merchandise revenue of the invoice"
+      - name: net_revenue
+        description: "net revenue of the invoice"
