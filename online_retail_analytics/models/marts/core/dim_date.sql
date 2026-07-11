@@ -13,6 +13,7 @@ select
     toStartOfMonth(date_day) as month_start_date,
     dateName('month', date_day) as month_name,
     toISOWeek(date_day) as week_of_year,
+    toDayOfYear(date_day) as day_of_year,
     toDayOfMonth(date_day) as day_of_month,
     toDayOfWeek(date_day) as day_of_week,
     dateName('weekday', date_day) as day_name,

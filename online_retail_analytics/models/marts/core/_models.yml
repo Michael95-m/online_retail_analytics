@@ -33,6 +33,7 @@ models:
         description: "Whether the date is a weekend"
 
   - name: dim_products
+    description: "Product dimension table"
     columns:
       - name: stock_code
         description: "The stock code of the product"
@@ -43,6 +44,11 @@ models:
         description: "The description of the product"
       - name: product_type
         description: "The type of the product, either merchandise or non-merchandise product type. Non-merchandise product types are defined in the stock_code_type seed."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['merchandise', 'postage', 'fee', 'adjustment', 'charity', 'voucher', 'test', 'other']
       - name: is_merchandise
         description: "Whether the product is merchandise or not"
       - name: first_invoice_ts
