@@ -1,0 +1,68 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: "Date dimension table"
+    columns:
+      - name: date_day
+        description: "The date"
+        data_tests:
+          - not_null
+          - unique
+      - name: year
+        description: "The year of the date"
+      - name: quarter
+        description: "The quarter of the date"
+      - name: month
+        description: "The month of the date"
+      - name: month_start_date
+        description: "The first date of the month"
+      - name: month_name
+        description: "The name of the month"
+      - name: week_of_year
+        description: "The week of the year of the date"
+      - name: day_of_year
+        description: "The day of the year of the date"
+      - name: day_of_month
+        description: "The day of the month of the date"
+      - name: day_of_week
+        description: "The day of the week of the date"
+      - name: day_name
+        description: "The name of the day of the week"
+      - name: is_weekend
+        description: "Whether the date is a weekend"
+
+  - name: dim_products
+    columns:
+      - name: stock_code
+        description: "The stock code of the product"
+        data_tests:
+          - not_null
+          - unique
+      - name: description
+        description: "The description of the product"
+      - name: product_type
+        description: "The type of the product, either merchandise or non-merchandise product type. Non-merchandise product types are defined in the stock_code_type seed."
+      - name: is_merchandise
+        description: "Whether the product is merchandise or not"
+      - name: first_invoice_ts
+        description: "The timestamp of the first invoice for this product"
+      - name: last_invoice_ts
+        description: "The timestamp of the last invoice for this product"
+
+  - name: dim_customers
+    description: "Customer dimension table"
+    columns:
+      - name: customer_id
+        description: "The unique identifier of the customer"
+        data_tests:
+          - not_null
+          - unique
+      - name: country
+        description: "The country of the customer"
+      - name: first_invoice_ts
+        description: "The timestamp of the first invoice for this customer"
+      - name: last_invoice_ts
+        description: "The timestamp of the last invoice for this customer"
+      - name: first_invoice_date
+        description: "The date of the first invoice for this customer"
