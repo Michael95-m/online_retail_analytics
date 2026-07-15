@@ -164,6 +164,24 @@ Generic tests (`not_null`, `unique`) catch missing or duplicate data, but they d
 
 One lesson worth calling out: an early version of the mart reconciliation tests compared `net_revenue` to `merchandise_revenue + non_merchandise_revenue` with `!=`. Those two numbers are mathematically equal but computed via different summation paths, so at real data volume floating-point rounding made them differ by a fraction of a cent — a false failure on correct data. Fixed by using a tolerance (`abs(a - b) > 0.01`) instead of exact equality. Never compare floats with `!=` in a reconciliation test.
 
+## Design Decisions
+
+A few choices worth calling out — with the reasoning, since the *why* matters more than the *what*:
+
+- **Atomic fact grain.** `fct_invoice_lines` is one row per physical invoice line, with no aggregation. Building at the lowest grain means any question (by day, product, customer, country) is just a roll-up of the same fact, and nothing — `unit_price`, `description`, individual returns — is lost. The previous `int_*` models aggregated early and then aggregated again in the marts, which both destroyed detail and let the same metric be defined two different ways.
+
+- **Signed `line_amount`, no sign-flipping.** Returns arrive with negative quantities, so `line_amount = quantity * unit_price` is naturally negative. Net revenue is therefore just `sum(line_amount)` — the manual `* -1` logic that was scattered across the old models (and the rounding/definition bugs that came with it) is gone.
+
+- **Natural keys + an unknown member.** The fact joins to dimensions on business keys (`invoice_date`, `stock_code`, `customer_id`) rather than generated surrogate keys — on a columnar engine like ClickHouse the extra key-assignment step buys little. Guest checkouts (~25% of rows, null `customer_id`) map to a `-1` "unknown" member in `dim_customers`, so a dimension join never silently drops a fact row.
+
+- **Classification as a seed, not code.** Non-merchandise stock codes (postage, fees, vouchers, adjustments…) live in a tested `stock_code_type` seed instead of a hardcoded `IN (...)` list buried in SQL. That makes the classification *data* — documented, unit-testable (`accepted_values`), visible in lineage, and extendable without touching model logic.
+
+- **One `transaction_type`, derived once.** A single derived field (`sale` / `return` / `fee` / `adjustment` / …) replaces three interacting boolean flags, so a revenue metric is defined in exactly one place and the marts just `sumIf` on it.
+
+- **Partition + sort for the query pattern.** `fct_invoice_lines` is partitioned by `toYYYYMM(invoice_date)` and ordered date-first, because the dominant access pattern is date-range analysis — that combination gives ClickHouse partition pruning and data-skipping on the queries that actually run.
+
+- **Reconciliation over trust.** Generic tests catch nulls and duplicates but not *wrong numbers*. Singular reconciliation tests assert `sum(line_amount)` equals the raw source total to the penny — which is what proved the star-schema rebuild reproduced the original revenue exactly.
+
 ## Data Notes
 
 - **Cancellations / returns**: invoices prefixed with `C` have negative quantities. The atomic fact records them with a signed `line_amount` (naturally negative) and `transaction_type = 'return'`, so net revenue falls out of `sum(line_amount)` with no manual sign-flipping. Guest purchases (null `customer_id`) map to a `-1` "unknown" member in `dim_customers`, so no fact row is ever dropped by a join.
