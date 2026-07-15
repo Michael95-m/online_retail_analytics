@@ -4,7 +4,7 @@ models:
   - name: mart_revenue_daily
     description: "Daily revenue mart"
     columns:
-      - name: invoice_dt
+      - name: invoice_date
         description: "The date of the invoice"
         data_tests:
           - not_null
@@ -24,12 +24,12 @@ models:
       - name: cancelled_invoice_count
         description: "Total number of cancelled invoices for the day"
       - name: adjustment_quantity
-        description: "Total number of adjustments for the day"
+        description: "Of which, quantity on zero-priced adjustment lines for the day"
 
   - name: mart_revenue_monthly
     description: "Monthly revenue mart"
     columns:
-      - name: invoice_mth
+      - name: invoice_month
         description: "The start date of the month of the invoice"
         data_tests:
           - not_null
@@ -49,7 +49,7 @@ models:
       - name: cancelled_invoice_count
         description: "Total number of cancelled invoices for the month"
       - name: adjustment_quantity
-        description: "Total number of adjustments for the month"
+        description: "TOf which, quantity on zero-priced adjustment lines for the month"
 
   - name: mart_revenue_by_country
     description: "Revenue mart by country"
@@ -74,10 +74,19 @@ models:
       - name: cancelled_invoice_count
         description: "Total number of cancelled invoices for the country"
       - name: adjustment_quantity
-        description: "Total number of adjustments for the country"
+        description: "Of which, quantity on zero-priced adjustment lines for the country"
 
   - name: mart_daily_transaction_detail
     description: "Daily transaction detail mart"
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - stock_code
+              - country
+              - report_date
+              - is_cancelled
+              - is_merchandise
     columns:
       - name: stock_code
         description: "The stock code of the product"
@@ -87,7 +96,7 @@ models:
         description: "The origin country of the invoice"
         data_tests:
           - not_null
-      - name: report_dt
+      - name: report_date
         description: "The date of the invoice"
         data_tests:
           - not_null
@@ -102,6 +111,6 @@ models:
       - name: total_quantity
         description: "Total quantity of products in this invoice"
       - name: adjustment_quantity
-        description: "Total quantity of adjustments in this invoice"
+        description: "Of which, quantity on zero-priced adjustment lines in this invoice"
       - name: line_revenue
         description: "Total revenue from this line item in the invoice"

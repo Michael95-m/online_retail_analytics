@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: mart_customer_rfm
+    description: "RFM scores for each customer"
+    columns:
+      - name: customer_id
+        description: "Customer id"
+        data_tests:
+          - unique
+          - not_null
+      - name: last_purchase_date
+        description: "Last purchased date by customer"
+      - name: recency
+        description: "Minus between maximum date in the dataset and last purchased date"
+      - name: r_score
+        description: "Recency score (1 to 5)"
+      - name: frequency
+        description: "Total number of invoices (excluding canceled) by customer"
+      - name: f_score
+        description: "Frequency score (1 to 5)"
+      - name: monetary
+        description: "Total amount related with merchandise activity made by customer"
+      - name: m_score
+        description: "Monetary score (1 to 5)"
+      - name: rfm_segment
+        description: "RFM categorization"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Champions', 'Recent/New', 'At Risk', 'Others']

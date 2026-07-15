@@ -1,7 +1,7 @@
 select
     stock_code,
     country,
-    report_dt,
+    report_date,
     is_cancelled,
     count(*)
 from {{ ref('mart_daily_transaction_detail') }}

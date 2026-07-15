@@ -32,15 +32,3 @@ models:
         description: "Country name. Nominal, the name of the country where each customer resides."
         data_tests:
           - not_null
-      - name: is_cancelled
-        description: "Indicator showing whether the order was cancelled (1) or not (0)."
-        data_tests:
-          - not_null
-      - name: is_zero_priced
-        description: "Indicator showing whether the order has a unit price of zero (1) or not (0)."
-        data_tests:
-          - not_null
-      - name: is_merchandise
-        description: "Indicator showing whether the order is for merchandise (1) or not (0)."
-        data_tests:
-          - not_null
