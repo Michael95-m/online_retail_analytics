@@ -1,21 +1,16 @@
-with int_invoice_items as (
-    select *
-    from {{ ref('int_invoice_items') }}
-)
-
 select
     stock_code,
     country,
-    toDate(invoice_create_ts) as report_dt,
-    is_cancelled,
+    invoice_date as report_date,
+    transaction_type = 'return' as is_cancelled,
     is_merchandise,
-    sum(total_quantity) as total_quantity,
-    sum(adjustment_quantity) as adjustment_quantity,
-    sum(line_revenue) as line_revenue
-from int_invoice_items
+    sum(quantity) as total_quantity,
+    sumIf(quantity, transaction_type = 'adjustment') as adjustment_quantity,
+    sum(line_amount) as line_revenue
+from {{ ref('fct_invoice_lines') }}
 group by
     stock_code,
     country,
-    toDate(invoice_create_ts),
+    invoice_date,
     is_cancelled,
     is_merchandise
