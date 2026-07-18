@@ -4,6 +4,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 import logging
+import argparse
+from datetime import datetime
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
@@ -40,18 +42,19 @@ def read_excel_file(file_path: Path, sheet_name: str) -> pd.DataFrame:
     return pd.read_excel(file_path, sheet_name=sheet_name)
 
 
-def drop_table_if_exists(client, table_name: str):
+def drop_table_if_exists(client, database: str, table: str):
     """
     Drops a table in ClickHouse if it exists.
 
     Args:
         client: The ClickHouse client.
-        table_name (str): The name of the table to drop.
+        database (str) : The name of the database
+        table (str): The name of the table to drop
     """
-    client.command(f"DROP TABLE IF EXISTS {table_name}")
+    client.command(f"DROP TABLE IF EXISTS {database}.{table}")
 
 
-def create_table(client, sql_file_path: Path):
+def create_table_if_not_exists(client, sql_file_path: Path):
     """
     Creates a table in ClickHouse using the SQL from a file.
 
@@ -92,30 +95,24 @@ def cast_column_types(df: pd.DataFrame, type_dict: dict) -> pd.DataFrame:
     return df.astype(type_dict)
 
 
-def insert_data_into_clickhouse(client, table: str, database: str, df: pd.DataFrame):
+def valid_date(s: str):
+    return datetime.strptime(s, "%Y-%m-%d").date()
+
+
+def insert_data_into_clickhouse(client, df: pd.DataFrame, table: str, database: str):
     """
     Inserts data from a DataFrame into a ClickHouse table.
 
     Args:
         client: The ClickHouse client.
+        df (pd.DataFrame): The DataFrame containing the data to insert.
         table (str): The name of the table to insert data into.
         database (str): The name of the database containing the table.
-        df (pd.DataFrame): The DataFrame containing the data to insert.
     """
     client.insert_df(table=table, database=database, df=df)
 
 
-def main():
-    logging.info("Starting data loading process...")
-    load_dotenv()  # Load environment variables from .env file
-
-    ## Read data from the Excel file
-    csv_file_path = Path(__file__).parent.parent / "data" / "online_retail_II.xlsx"
-    logging.info(f"Reading data from Excel file: {csv_file_path}")
-    df_2009_to_2010 = read_excel_file(csv_file_path, "Year 2009-2010")
-    df_2010_to_2011 = read_excel_file(csv_file_path, "Year 2010-2011")
-    df = pd.concat([df_2009_to_2010, df_2010_to_2011])
-
+def preprocess_df(df_day: pd.DataFrame):
     ## rename the columns to match the ClickHouse table schema
     logging.info("Renaming columns to match ClickHouse table schema...")
     columns = {
@@ -128,7 +125,7 @@ def main():
         "Customer ID": "customer_id",
         "Country": "country",
     }
-    df = rename_columns(df, columns)
+    df_day = rename_columns(df_day, columns)
 
     ## type casting to match the ClickHouse table schema
     logging.info("Casting column types to match ClickHouse table schema...")
@@ -141,29 +138,82 @@ def main():
         "customer_id": "Int64",  # contains nulls
         "country": "string",
     }
-    df = cast_column_types(df, type_dict)
+    df_day = cast_column_types(df_day, type_dict)
+
+    return df_day
+
+
+def load_one_date(
+    client,
+    df_all: pd.DataFrame,
+    date: datetime.date,
+    table: str = "raw_invoice",
+    database: str = "retail",
+):
+    df_day = df_all[df_all["invoice_date"].dt.date == date].copy()
+
+    ## Lightweight delete to clear that day
+    client.command(
+        f"DELETE FROM {database}.{table} WHERE toDate(invoice_date) = '{date}'"
+    )
+    df_day["_loaded_at"] = pd.Timestamp.now()
+    insert_data_into_clickhouse(client, df=df_day, table=table, database=database)
+    logging.info(
+        f"Inserted data from the date {date} into the table {database}.{table}. There are {len(df_day)} rows in the dataframe"
+    )
+
+
+def truncate_table(client, table: str, database: str):
+    client.command(f"TRUNCATE TABLE {database}.{table}")
+    logging.info(f"Truncated table {database}.{table} before insertion")
+
+
+def main(is_backfill: bool, date: datetime.date):
+    logging.info("Starting data loading process...")
+    load_dotenv()  # Load environment variables from .env file
+    table = "raw_invoice"
+    database = "retail"
+
+    ## Read data from the Excel file
+    csv_file_path = Path(__file__).parent.parent / "data" / "online_retail_II.xlsx"
+    logging.info(f"Reading data from Excel file: {csv_file_path}")
+    df_2009_to_2010 = read_excel_file(csv_file_path, "Year 2009-2010")
+    df_2010_to_2011 = read_excel_file(csv_file_path, "Year 2010-2011")
+    df_all = pd.concat([df_2009_to_2010, df_2010_to_2011])
+    df_all = preprocess_df(df_all)
 
     with create_clickhouse_client() as client:
         logging.info("Connected to ClickHouse database.")
 
-        # delete the existing table if it exists
-        table_name = "retail.raw_invoice"
-        logging.info(f"Dropping existing table {table_name} if it exists...")
-        drop_table_if_exists(client, table_name)
-
         # Create the table
-        logging.info(f"Creating the table {table_name} in ClickHouse...")
+        logging.info(f"Creating the table {database}.{table} in ClickHouse...")
         create_table_sql_path = Path(__file__).parent / "ddl" / "raw_invoice.sql"
-        create_table(client, create_table_sql_path)
+        create_table_if_not_exists(client, create_table_sql_path)
 
-        # Insert data into ClickHouse table
-        logging.info(f"Inserting data into table {table_name}...")
-        table = "raw_invoice"
-        database = "retail"
-        insert_data_into_clickhouse(client, table, database, df)
+        if is_backfill:  ## if use backfill flag
+            truncate_table(client, table=table, database=database)
+            df_all["_loaded_at"] = pd.Timestamp.now()
+            insert_data_into_clickhouse(
+                client, df=df_all, table=table, database=database
+            )
+            logging.info(
+                f"Inserted all the date into the table {database}.{table}. There are {len(df_all)} rows in the dataframe"
+            )
+
+        if date is not None:  ## if have date args
+            load_one_date(client, df_all, date, table="raw_invoice", database="retail")
 
     logging.info("Data loading process completed successfully.")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="load raw invoice data")
+    ## raise error if neither and both
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--backfill", action="store_true", help="load all dates")
+    group.add_argument("--date", type=valid_date, help="YYYY-MM-DD")
+    args = parser.parse_args()
+
+    is_backfill = args.backfill
+    date = args.date
+    main(is_backfill, date)
