@@ -125,6 +125,8 @@ models:
           - not_null
       - name: invoice_ts
         description: "The timestamp of the invoice"
+      - name: _loaded_at
+        description: "Ingestion timestamp — when this row was loaded into the raw table"
 
   - name: fct_invoices
     description: "Invoice fact table"

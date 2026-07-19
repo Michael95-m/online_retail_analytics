@@ -11,7 +11,8 @@ renamed as (
         invoice_date as invoice_ts,
         unit_price,
         customer_id,
-        country
+        country,
+        _loaded_at
     from
         source
 )
