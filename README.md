@@ -170,6 +170,18 @@ A few choices worth calling out — with the reasoning, since the *why* matters 
 
 - **Atomic fact grain.** `fct_invoice_lines` is one row per physical invoice line, with no aggregation. Building at the lowest grain means any question (by day, product, customer, country) is just a roll-up of the same fact, and nothing — `unit_price`, `description`, individual returns — is lost. The previous `int_*` models aggregated early and then aggregated again in the marts, which both destroyed detail and let the same metric be defined two different ways.
 
+- **Incremental fact, keyed on a load-time watermark.** `fct_invoice_lines` is
+ materialized incrementally, filtering on `_loaded_at` (when a row was loaded)
+rather than `invoice_date` (when the sale happened). This means late-arriving
+records — e.g. a cancellation that lands days after the original sale — are
+picked up automatically the moment they're loaded, with no trailing lookback
+window. Keying on `invoice_date` would silently miss them, since their event
+date is already "in the past." Reprocessing is idempotent: a `delete+insert` on
+the `(invoice_id, line_number)` grain replaces reloaded rows exactly, and the
+grain + reconciliation tests prove no duplication or drift after a re-run.
+
+- **freshness.** watermark drives incremental loading and freshness monitoring, both off `_loaded_at`
+
 - **Signed `line_amount`, no sign-flipping.** Returns arrive with negative quantities, so `line_amount = quantity * unit_price` is naturally negative. Net revenue is therefore just `sum(line_amount)` — the manual `* -1` logic that was scattered across the old models (and the rounding/definition bugs that came with it) is gone.
 
 - **Natural keys + an unknown member.** The fact joins to dimensions on business keys (`invoice_date`, `stock_code`, `customer_id`) rather than generated surrogate keys — on a columnar engine like ClickHouse the extra key-assignment step buys little. Guest checkouts (~25% of rows, null `customer_id`) map to a `-1` "unknown" member in `dim_customers`, so a dimension join never silently drops a fact row.
