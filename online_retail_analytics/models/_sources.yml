@@ -39,3 +39,5 @@ sources:
             description: "Country name. Nominal, the name of the country where each customer resides."
             data_tests:
               - not_null
+          - name: _loaded_at
+            description: "Ingestion timestamp — when this row was loaded into the raw table"
