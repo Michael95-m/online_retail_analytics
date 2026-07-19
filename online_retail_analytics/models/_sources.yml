@@ -10,6 +10,9 @@ sources:
     tables:
       - name: raw_invoice
         description: "Raw invoice data from Online Retail II dataset"
+        loaded_at_field: _loaded_at
+        freshness:
+          warn_after: {count: 36, period: hour}
         columns:
           - name: invoice_id
             description: "Invoice number. Prefix 'C' indicates cancellation"
